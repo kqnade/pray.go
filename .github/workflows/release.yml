@@ -1,27 +1,57 @@
 name: Release
-
 on:
   push:
     tags:
-    - 'v*'
+      - 'v*'  # v* で始まるタグ（例: v1.0.0）でトリガー
 
 jobs:
-  release:
-    name: Release
+  build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Setup Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.18.x
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v2
-      with:
-        version: latest
-        args: release --rm-dist
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # リポジトリのコードをチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Goのセットアップ
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20'  # 必要に応じてGoのバージョンを指定
+
+      # Goモジュールのキャッシュを使って依存関係をインストール
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      # Goバイナリのビルド
+      - name: Build binary
+        run: |
+          go build
+
+      # バージョン情報を取得
+      - name: Get version
+        id: version
+        run: echo "::set-output name=version::$(echo ${GITHUB_REF} | sed 's/refs\/tags\///')"
+
+      # バイナリファイルをGitHubリリースにアップロード
+      - name: Upload Release Assets
+        uses: ncipollo/release-action@v1
+        with:
+          files: |
+            pray
+
+      # オプション: リリースメッセージを作成してタグをプッシュ
+      - name: Create release notes
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          echo "Creating release notes for version $VERSION"
+          echo "Release notes for $VERSION" > release-notes.txt
+          
+          # リリースを作成する
+          gh release create $VERSION my-cli-tool release-notes.txt
+
