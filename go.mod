@@ -1,4 +1,4 @@
-module pray
+module github.com/kqnade/pray.go
 
 go 1.23
 
