@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 package main
 
-import "pray/cmd"
+import "github.com/kqnade/pray.go/cmd"
 
 func main() {
 	cmd.Execute()
