@@ -1,27 +1,38 @@
-name: Release
+name: Go Build and Release
 
 on:
   push:
-    tags:
-    - 'v*'
+    branches:
+      - main   # mainブランチにpushされたときに実行
 
 jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest  # Ubuntuランナーを使用
+
     steps:
+    # ソースコードをチェックアウト
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+
+    # Goのセットアップ
+    - name: Set up Go
+      uses: actions/setup-go@v3
       with:
-        fetch-depth: 0
-    - name: Setup Go
-      uses: actions/setup-go@v2
+        go-version: '1.23.2'  # 使用するGoのバージョン
+
+    # 依存関係を解決（go mod tidy）
+    - name: Install dependencies
+      run: go mod tidy
+
+    # Goのビルド（./prayという実行ファイルを作成）
+    - name: Build the Go project
+      run: go build -o pray ./main.go  # main.goがプロジェクトルートにあることを想定
+
+    # GitHub Releaseにアップロード
+    - name: Upload binary to GitHub Release
+      uses: softprops/action-gh-release@v1
       with:
-        go-version: 1.23.x
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v2
-      with:
-        version: latest
-        args: release
+        files: pray  # ビルドした実行ファイル
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHubのアクセストークンを使用
+
